@@ -10,8 +10,8 @@ Background:
 
   @checkTimer
   Scenario: Verificar el temporizador en ejecución
-    When Inicio un temporizador de "05" minutos y "45" segundos
-    Then El temporizador de "5":"44" debería estar visible
+    When Inicio un temporizador de "05" minutos y "00" segundos
+    Then El temporizador de "4":"59" debería estar visible
 
   @addExtraTime
   Scenario: Añadir un minuto adicional al temporizador en ejecución
@@ -21,10 +21,6 @@ Background:
 
   @deleteTimer
   Scenario: Eliminar un temporizador existente
-    When Inicio un temporizador de "01" minutos y "33" segundos
+    When Inicio un temporizador de "01" minutos y "30" segundos
     And Elimino el temporizador
     Then El temporizador ya no debería existir
-
-
-# Por algún motivo, el temporizador no logra introducir el número "0" en las pruebas,
-# No importa el debug realizado ni los ids utilizados, no funciona con "0"...

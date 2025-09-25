@@ -25,7 +25,10 @@ class timerPage {
     async setTimer(time){
     for (let i = 0; i < time.length; i++) {
         const digit = time[i];
-        const digitElement = $(`android=new UiSelector().text("${digit}")`);
+        let digitElement = $(`android=new UiSelector().text("${digit}")`);
+        if(digit == "0"){
+            digitElement = $(`//android.widget.Button[@resource-id="com.android.deskclock:id/key_middle" and @text="0"]`);
+        }
         await digitElement.waitForDisplayed({ timeout: 5000 })
         await digitElement.click();
         }
