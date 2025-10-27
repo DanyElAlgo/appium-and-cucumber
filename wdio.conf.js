@@ -56,7 +56,7 @@ exports.config = {
         platformName: 'Android',
         // browserName: 'Chrome',
         'appium:deviceName': 'Pixel',
-        'appium:platformVersion': '7.1.1',
+        'appium:platformVersion': '8.1.0',
         'appium:automationName': 'UiAutomator2',
         "appium:appPackage": "com.android.deskclock",
         "appium:appActivity": "com.android.deskclock.DeskClock",
