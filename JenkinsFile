@@ -46,6 +46,42 @@ pipeline {
             }
         }
 
+        stage('Ensure Appium drivers') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh '''
+                          echo "DEBUG: comprobar Appium y drivers (Unix)"
+                          npx appium --version || true
+                          npx appium driver list --installed || true
+                          if ! npx appium driver list --installed | grep -i uiautomator2 >/dev/null 2>&1; then
+                            echo "UiAutomator2 no instalado -> instalando..."
+                            npx appium driver install uiautomator2
+                          else
+                            echo "UiAutomator2 ya instalado"
+                          fi
+                        '''
+                    } else {
+                        bat '''
+                          echo DEBUG: comprobar Appium y drivers (Windows)
+                          npx appium --version || echo no appium
+                          npx appium driver list --installed || echo no drivers list
+                        '''
+                        bat '''
+                          FOR /F "delims=" %%i IN ('npx appium driver list --installed') DO set LIST=%%i
+                          npx appium driver list --installed | findstr /I uiautomator2 >nul
+                          if errorlevel 1 (
+                            echo UiAutomator2 no instalado -> instalando...
+                            npx appium driver install uiautomator2
+                          ) else (
+                            echo UiAutomator2 ya instalado
+                          )
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Start Appium (opcional)') {
             steps {
                 script {
