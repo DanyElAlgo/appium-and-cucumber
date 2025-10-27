@@ -1,1 +1,64 @@
-// to be completed
+pipeline {
+    agent any
+
+    environment {
+        NODE_VERSION = '16'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Start Appium (opcional)') {
+            steps {
+                sh '''
+                  if ! nc -z localhost 4723 ; then
+                    echo "Iniciando Appium en background (puerto 4723)..."
+                    npx appium --port 4723 &> appium.log &
+                    sleep 5
+                  else
+                    echo "Appium ya en ejecución"
+                  fi
+                '''
+            }
+        }
+
+        stage('Run tests') {
+            steps {
+                sh 'npm run wdio'
+            }
+        }
+
+        stage('Archive results') {
+            steps {
+                archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
+                sh '''
+                  if [ -d "allure-results" ]; then
+                    npx allure generate allure-results -o allure-report || true
+                    tar -czf allure-report.tar.gz allure-report || true
+                    archiveArtifacts artifacts: 'allure-report.tar.gz', allowEmptyArchive: true
+                  fi
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Finalizado pipeline — recoger logs y artefactos'
+            sh 'tail -n 200 appium.log || true'
+        }
+        failure {
+            echo 'Build fallido: revisar logs y resultados de Allure'
+        }
+    }
+}
