@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    // environment {
-    //     NODE_VERSION = '16'
-    // }
-
     stages {
         stage('Checkout') {
             steps {
@@ -14,40 +10,93 @@ pipeline {
 
         stage('Install dependencies') {
             steps {
-                sh 'npm ci'
+                script {
+                    if (isUnix()) {
+                        sh '''
+                          echo "DEBUG: entorno Unix"
+                          node -v || true
+                          npm -v || true
+                          ls -la || true
+                          if [ -f package-lock.json ]; then
+                            echo "package-lock.json encontrado -> npm ci"
+                            npm ci
+                          else
+                            echo "package-lock.json NO encontrado -> npm install"
+                            npm install
+                          fi
+                        '''
+                    } else {
+                        bat '''
+                          echo DEBUG: entorno Windows
+                          node -v || echo node no disponible
+                          npm -v || echo npm no disponible
+                          dir
+                        '''
+                        bat '''
+                          if exist package-lock.json (
+                            echo package-lock.json encontrado -> npm ci
+                            npm ci
+                          ) else (
+                            echo package-lock.json NO encontrado -> npm install
+                            npm install
+                          )
+                        '''
+                    }
+                }
             }
         }
 
         stage('Start Appium (opcional)') {
             steps {
-                sh '''
-                  if ! nc -z localhost 4723 ; then
-                    echo "Iniciando Appium en background (puerto 4723)..."
-                    npx appium --port 4723 &> appium.log &
-                    sleep 5
-                  else
-                    echo "Appium ya en ejecución"
-                  fi
-                '''
+                script {
+                    if (isUnix()) {
+                        sh '''
+                          if ! command -v nc >/dev/null 2>&1 || ! nc -z localhost 4723 ; then
+                            echo "Intentando iniciar Appium en background (puerto 4723)..."
+                            npx appium --port 4723 &> appium.log &
+                            sleep 5
+                          else
+                            echo "Appium ya en ejecución"
+                          fi
+                        '''
+                    } else {
+                        bat '''
+                          echo En agente Windows: asegúrate de que Appium esté en ejecución en el agente (puerto 4723)
+                          REM Si quieres arrancar Appium en Windows, usa powershell para lanzar npx appium
+                        '''
+                    }
+                }
             }
         }
 
         stage('Run tests') {
             steps {
-                sh 'npm run wdio'
+                script {
+                    if (isUnix()) {
+                        sh 'npm run wdio'
+                    } else {
+                        bat 'npm run wdio'
+                    }
+                }
             }
         }
 
         stage('Archive results') {
             steps {
                 archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
-                sh '''
-                  if [ -d "allure-results" ]; then
-                    npx allure generate allure-results -o allure-report || true
-                    tar -czf allure-report.tar.gz allure-report || true
-                    archiveArtifacts artifacts: 'allure-report.tar.gz', allowEmptyArchive: true
-                  fi
-                '''
+                script {
+                    if (isUnix()) {
+                        sh '''
+                          if [ -d "allure-results" ]; then
+                            npx allure generate allure-results -o allure-report || true
+                            tar -czf allure-report.tar.gz allure-report || true
+                          fi
+                        '''
+                        archiveArtifacts artifacts: 'allure-report.tar.gz', allowEmptyArchive: true
+                    } else {
+                        bat 'echo Archivar resultados en Windows si corresponde'
+                    }
+                }
             }
         }
     }
@@ -55,7 +104,13 @@ pipeline {
     post {
         always {
             echo 'Finalizado pipeline — recoger logs y artefactos'
-            sh 'tail -n 200 appium.log || true'
+            script {
+                if (isUnix()) {
+                    sh 'tail -n 200 appium.log || true'
+                } else {
+                    bat 'powershell -Command "Get-Content appium.log -Tail 200 -ErrorAction SilentlyContinue" || echo no appium.log'
+                }
+            }
         }
         failure {
             echo 'Build fallido: revisar logs y resultados de Allure'
