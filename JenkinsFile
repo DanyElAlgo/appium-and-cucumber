@@ -108,10 +108,20 @@ pipeline {
         stage('Run tests') {
             steps {
                 script {
-                    if (isUnix()) {
+                    // usar credenciales guardadas en Jenkins (id: browserstack-creds)
+                    withCredentials([usernamePassword(credentialsId: 'browserstack-creds',
+                                                     usernameVariable: 'BROWSERSTACK_USERNAME',
+                                                     passwordVariable: 'BROWSERSTACK_ACCESS_KEY')]) {
+                        // Si necesitas subir la app desde el agent, hazlo aquí y exporta BROWSERSTACK_APP_ID
+                        sh '''
+                          echo "Subiendo app (opcional) y guardando app id..."
+                          # ejemplo: captura app_id en variable, ajusta ruta del apk
+                          # APP_JSON=$(curl -u "$BROWSERSTACK_USERNAME:$BROWSERSTACK_ACCESS_KEY" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@app/build/outputs/apk/debug/app-debug.apk")
+                          # export BROWSERSTACK_APP_ID=$(echo "$APP_JSON" | jq -r .app_url)
+                          # echo "BROWSERSTACK_APP_ID=$BROWSERSTACK_APP_ID" >> $WORKSPACE/browserstack_env
+                        '''
+                        // ejecutar tests con las credenciales en env
                         sh 'npm run wdio'
-                    } else {
-                        bat 'npm run wdio'
                     }
                 }
             }

@@ -52,14 +52,22 @@ exports.config = {
     // https://saucelabs.com/platform/platform-configurator
     //
     capabilities: [{
-        // capabilities for local Appium web tests on an Android Emulator
+        // Antes: local Appium capabilities
+        // ...existing code...
         platformName: 'Android',
-        // browserName: 'Chrome',
-        'appium:deviceName': 'Pixel',
-        'appium:platformVersion': '8.1.0',
         'appium:automationName': 'UiAutomator2',
-        "appium:appPackage": "com.android.deskclock",
-        "appium:appActivity": "com.android.deskclock.DeskClock",
+        // usa el app id devuelto por BrowserStack (bs://...) o una app pública
+        'appium:app': process.env.BROWSERSTACK_APP_ID || 'bs://<REPLACE_WITH_APP_ID>',
+        'bstack:options': {
+            deviceName: 'Google Pixel 3',
+            osVersion: '9.0',
+            projectName: 'Appium Cucumber',
+            buildName: process.env.BUILD_NAME || 'local-build',
+            sessionName: 'wdio_browserstack_run',
+            // no pongas credenciales estáticas: las tomaremos de env
+            userName: process.env.BROWSERSTACK_USERNAME,
+            accessKey: process.env.BROWSERSTACK_ACCESS_KEY
+        }
     }],
 
     //
@@ -109,7 +117,8 @@ exports.config = {
     // Services take over a specific job you don't want to take care of. They enhance
     // your test setup with almost no effort. Unlike plugins, they don't add new
     // commands. Instead, they hook themselves up into the test process.
-    services: ['appium'],
+    // services: ['appium'],
+    services: ['browserstack'],
 
     // Framework you want to run your specs with.
     // The following are supported: Mocha, Jasmine, and Cucumber
